@@ -1,0 +1,36 @@
+// Use importScripts to load the Firebase SDKs from the CDN
+// This is the standard way for service workers.
+importScripts("https://www.gstatic.com/firebasejs/9.2.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/9.2.0/firebase-messaging-compat.js");
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyConaLMGbmuUyXc0uPK6E3La_PPeKjeVno",
+  authDomain: "studio-4703824518-7192d.firebaseapp.com",
+  projectId: "studio-4703824518-7192d",
+  storageBucket: "studio-4703824518-7192d.appspot.com",
+  messagingSenderId: "624173814853",
+  appId: "1:624173814853:web:5ef00936897789bd6fff2c",
+  measurementId: "G-5G3Q5Z3B1P"
+};
+
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Retrieve an instance of Firebase Messaging so that it can handle background
+// messages.
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage(function(payload) {
+  console.log('Received background message ', payload);
+
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/firebase-logo.png' // Optional: you can add an icon
+  };
+
+  self.registration.showNotification(notificationTitle,
+    notificationOptions);
+});
