@@ -1,0 +1,8 @@
+# Ignorar carpetas
+/docs
+/src
+
+# (Opcional) Ignorar dependencias locales y build
+node_modules
+.next
+.env
