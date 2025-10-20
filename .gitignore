@@ -1,6 +1,7 @@
 # Ignorar carpetas
 /docs
 /src
+/public
 
 # (Opcional) Ignorar dependencias locales y build
 node_modules
