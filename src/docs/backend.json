@@ -1,0 +1,532 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user within the Arrozales Academic Observer system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the user."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user (e.g., teacher, student, parent)."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "password": {
+          "type": "string",
+          "description": "The user's password. Note: Storing raw passwords is not recommended."
+        },
+        "gradeAssignment": {
+          "type": "string",
+          "description": "The grade or assignment of the user, applicable to students or teachers."
+        },
+        "fcmTokens": {
+          "type": "array",
+          "description": "An array of Firebase Cloud Messaging registration tokens for sending push notifications.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "role",
+        "email"
+      ]
+    },
+    "Course": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Course",
+      "type": "object",
+      "description": "Represents a course offered at the Escuela Oficial Rural Mixta Caserío Los Arrozales.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the course."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the course."
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Reference to the teacher assigned to the course. (Relationship: Teacher 1:N Course)"
+        },
+        "academicArea": {
+          "type": "string",
+          "description": "The academic area to which the course belongs."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "teacherId",
+        "academicArea"
+      ]
+    },
+    "Student": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Student",
+      "type": "object",
+      "description": "Represents a student enrolled at the Escuela Oficial Rural Mixta Caserío Los Arrozales.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the student."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the student."
+        },
+        "grade": {
+          "type": "string",
+          "description": "The grade level of the student."
+        },
+        "courseIds": {
+          "type": "array",
+          "description": "References to the courses the student is enrolled in. (Relationship: Student N:N Course)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender of the student.",
+          "enum": ["masculino", "femenino"]
+        },
+        "dateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "description": "The student's date of birth."
+        },
+        "fcmTokens": {
+          "type": "array",
+          "description": "An array of Firebase Cloud Messaging registration tokens for sending push notifications.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "grade",
+        "gender",
+        "dateOfBirth"
+      ]
+    },
+    "Grade": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Grade",
+      "type": "object",
+      "description": "Represents a grade assigned to a student for a specific course and grading period.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the grade entry."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the student who received the grade. (Relationship: Student 1:N Grade)"
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to the course for which the grade was given. (Relationship: Course 1:N Grade)"
+        },
+        "year": {
+          "type": "number",
+          "description": "The academic year the grade was recorded for."
+        },
+        "bimestre1": {
+            "type": "object",
+            "description": "Grades for the first bimester."
+        },
+        "bimestre2": {
+            "type": "object",
+            "description": "Grades for the second bimester."
+        },
+        "bimestre3": {
+            "type": "object",
+            "description": "Grades for the third bimester."
+        },
+        "bimestre4": {
+            "type": "object",
+            "description": "Grades for the fourth bimester."
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "courseId",
+        "year"
+      ]
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a report generated from grade data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the report."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to the student the report is about. (Relationship: Student 1:N Report)"
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to the course the report concerns. (Relationship: Course 1:N Report)"
+        },
+        "dateGenerated": {
+          "type": "string",
+          "description": "The date and time the report was generated.",
+          "format": "date-time"
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "URL to the report file stored in Firebase Storage.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "courseId",
+        "dateGenerated",
+        "fileUrl"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification sent to a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the notification."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the user who is the recipient of the notification. (Relationship: User 1:N Notification)"
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the notification message."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of notification (e.g., announcement, reminder, gradePublished)."
+        },
+        "dateSent": {
+          "type": "string",
+          "description": "The date and time the notification was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "message",
+        "type",
+        "dateSent"
+      ]
+    },
+    "CalendarEvent": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Calendar Event",
+      "type": "object",
+      "description": "Represents an event in the school calendar.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the event."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the event."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date of the event."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the event."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["reunion", "academico", "feriado", "actividad"],
+          "description": "The category of the event."
+        }
+      },
+      "required": ["id", "title", "date", "category"]
+    },
+    "Conversation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Conversation",
+      "type": "object",
+      "description": "Represents a chat conversation between users.",
+      "properties": {
+        "participants": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "An array of user IDs participating in the conversation."
+        },
+        "messages": {
+          "type": "array",
+          "items": { "$ref": "#/entities/Message" },
+          "description": "An array of messages within the conversation."
+        },
+        "readBy": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "An array of user IDs who have read the conversation."
+        }
+      },
+      "required": ["participants", "messages"]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "Represents a single message in a conversation.",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["senderId", "text", "timestamp"]
+    },
+    "DailyAttendance": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Daily Attendance",
+      "type": "object",
+      "description": "Represents the attendance for a specific course on a specific day.",
+      "properties": {
+        "courseId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "records": {
+          "type": "array",
+          "items": { "$ref": "#/entities/AttendanceRecord" }
+        }
+      },
+      "required": ["courseId", "date", "records"]
+    },
+    "AttendanceRecord": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Attendance Record",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["studentId", "status"]
+    },
+    "GradeAssignment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Grade Assignment",
+      "type": "object",
+      "description": "Represents the assignment of courses to a specific school grade.",
+      "properties": {
+        "courseIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "An array of course IDs assigned to the grade."
+        }
+      },
+      "required": ["courseIds"]
+    },
+     "TeacherAssignment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Teacher Assignment",
+      "type": "object",
+      "description": "Represents the assignment of grades to a specific teacher.",
+      "properties": {
+        "gradeIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "An array of grade names assigned to the teacher."
+        }
+      },
+      "required": ["gradeIds"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user profiles, including admins, directors, and teachers."
+    },
+    "/students/{studentId}": {
+      "schema": {
+        "$ref": "#/entities/Student"
+      },
+      "description": "Stores profiles for all enrolled students."
+    },
+    "/events/{eventId}": {
+        "schema": {
+          "$ref": "#/entities/CalendarEvent"
+        },
+        "description": "Stores school calendar events."
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "Stores chat conversations between users."
+    },
+    "/attendance/{attendanceId}": {
+      "schema": { "$ref": "#/entities/DailyAttendance" },
+      "description": "Stores daily attendance records for courses."
+    },
+    "/gradeAssignments/{gradeName}": {
+      "schema": { "$ref": "#/entities/GradeAssignment" },
+      "description": "Stores the list of courses assigned to each school grade. The document ID is the grade name (e.g., 'Primer Grado')."
+    },
+     "/teacherAssignments/{teacherId}": {
+      "schema": { "$ref": "#/entities/TeacherAssignment" },
+      "description": "Stores the list of grades assigned to each teacher. The document ID is the teacher's UID."
+    },
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership ensures that users can only access their own profile data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}",
+        "definition": {
+          "entityName": "Course",
+          "schema": {
+            "$ref": "#/backend/entities/Course"
+          },
+          "description": "Stores course information.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier for the course."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/students/{studentId}",
+        "definition": {
+          "entityName": "Student",
+          "schema": {
+            "$ref": "#/backend/entities/Student"
+          },
+          "description": "Stores student profiles. Path-based ownership ensures that users can only access their own profile data.",
+          "params": [
+            {
+              "name": "studentId",
+              "description": "The unique identifier for the student."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/grades/{gradeId}",
+        "definition": {
+          "entityName": "Grade",
+          "schema": {
+            "$ref": "#/backend/entities/Grade"
+          },
+          "description": "Stores grade information.",
+          "params": [
+            {
+              "name": "gradeId",
+              "description": "The unique identifier for the grade."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Stores report data.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores notifications for each user. Path-based ownership ensures that users can only access their own notifications.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "notificationId",
+              "description": "The unique identifier for the notification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/events/{eventId}",
+        "definition": {
+          "entityName": "CalendarEvent",
+          "schema": {
+            "$ref": "#/backend/entities/CalendarEvent"
+          },
+          "description": "Stores all school calendar events.",
+          "params": [
+            {
+              "name": "eventId",
+              "description": "The unique identifier for the event."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage data for the Arrozales Academic Observer system, focusing on role-based access and efficient data retrieval. The structure leverages path-based ownership for private user data and membership maps for collaborative data. Denormalization is employed to achieve authorization independence, eliminating the need for `get()` calls in security rules and enabling atomic operations.\n\nUsers are stored in a top-level `/users` collection, and other entities are stored under user subcollections to enable secure `list` operations. The system's design supports role-based access, data segregation, and denormalization for authorization independence.\n\nSpecifically:\n\n*   **Users**: Stored in `/users/{userId}`. This structure provides path-based ownership for user-related data, allowing simple rules to restrict access to a specific user's information. The `role` attribute within each user document facilitates role-based access control.\n*   **Courses**: Stored in `/courses/{courseId}`. Each course document stores the `teacherId` to indicate the teacher assigned to the course. Teachers can modify grades only for courses where their user ID matches the course's `teacherId`. The collection-level read operation is permitted, as there are no differences in access requirements.\n*   **Students**: Stored in `/students/{studentId}`. This structure allows simple rules to restrict access to a specific student's information. The `courseIds` field stores the courses each student is enrolled in.\n*   **Grades**: Stored in `/grades/{gradeId}`. This structure allows grades to be accessed without needing to reference the student, course, or teacher.\n*   **Reports**: Stored in `/reports/{reportId}`. Reports contain `studentId` and `courseId`.\n*   **Notifications**: Stored in `/users/{userId}/notifications/{notificationId}`. This structure enables secure listing of notifications because each user can only access their own notifications.\n*   **Events**: Stored in `/events/{eventId}`. This is a public collection that all users can read to get calendar events."
+  }
+}

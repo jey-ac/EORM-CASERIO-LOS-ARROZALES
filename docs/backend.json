@@ -1,0 +1,313 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the user (e.g., teacher, student, parent)."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "gradeAssignment": {
+          "type": "string",
+          "description": "Grade or assignment of the user. (e.g. '5th Grade', 'Math Teacher')"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "role",
+        "email"
+      ]
+    },
+    "Course": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Course",
+      "type": "object",
+      "description": "Represents a course in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the course."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the course."
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Reference to Teacher. (Relationship: Teacher 1:N Course)"
+        },
+        "academicArea": {
+          "type": "string",
+          "description": "Academic area of the course (e.g., Math, Science)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "teacherId",
+        "academicArea"
+      ]
+    },
+    "Student": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Student",
+      "type": "object",
+      "description": "Represents a student in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the student."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the student."
+        },
+        "grade": {
+          "type": "string",
+          "description": "Grade of the student."
+        },
+        "courseIds": {
+          "type": "array",
+          "description": "References to Courses. (Relationship: Student N:N Course)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "grade"
+      ]
+    },
+    "Grade": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Grade",
+      "type": "object",
+      "description": "Represents a grade for a student in a course.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the grade."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to Student. (Relationship: Student 1:N Grade)"
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to Course. (Relationship: Course 1:N Grade)"
+        },
+        "term": {
+          "type": "string",
+          "description": "Term for the grade (e.g., First Term, Second Term)."
+        },
+        "note": {
+          "type": "number",
+          "description": "The grade the student earned."
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "courseId",
+        "term",
+        "note"
+      ]
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a generated report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the report."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to Student. (Relationship: Student 1:N Report)"
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Reference to Course. (Relationship: Course 1:N Report)"
+        },
+        "reportData": {
+          "type": "string",
+          "description": "Data of the report (e.g., JSON, CSV)."
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "URL to the stored report file.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "studentId",
+        "courseId",
+        "reportData",
+        "fileUrl"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification sent to a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the notification."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Notification)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Content of the notification message."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of notification (e.g., announcement, reminder, grade published)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "message",
+        "type"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user information. Each document is uniquely identified by the user's UID. No denormalized data is required here as access is based on UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, corresponding to the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/courses/{courseId}",
+        "definition": {
+          "entityName": "Course",
+          "schema": {
+            "$ref": "#/backend/entities/Course"
+          },
+          "description": "Stores course information.  The 'teacherId' field indicates the teacher responsible for the course, enabling rules to enforce teacher-specific access.",
+          "params": [
+            {
+              "name": "courseId",
+              "description": "The unique identifier for the course."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/students/{studentId}",
+        "definition": {
+          "entityName": "Student",
+          "schema": {
+            "$ref": "#/backend/entities/Student"
+          },
+          "description": "Stores student information. No denormalized data is needed since access is based on the path and student's UID.",
+          "params": [
+            {
+              "name": "studentId",
+              "description": "The unique identifier for the student."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/grades/{gradeId}",
+        "definition": {
+          "entityName": "Grade",
+          "schema": {
+            "$ref": "#/backend/entities/Grade"
+          },
+          "description": "Stores grade information. Access is controlled by security rules based on `studentId` and `courseId`, which link back to the student and course documents.",
+          "params": [
+            {
+              "name": "gradeId",
+              "description": "The unique identifier for the grade."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Stores reports related to students. Access is controlled by security rules based on the `studentId` and `courseId`, ensuring only authorized users can access the reports.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores notifications for each user. This subcollection ensures that only the user (identified by `userId`) can access their notifications. This follows path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "notificationId",
+              "description": "The unique identifier for the notification."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a role-based grade management system with a focus on security, scalability, and ease of debugging. It leverages denormalization to ensure authorization independence and structural segregation to maintain a homogeneous security posture within each collection. The core principle is to avoid `get()` calls in security rules by denormalizing authorization data. Each user has their document in `/users/{userId}`. Courses are stored in `/courses/{courseId}`. A teacher owns many courses and the `teacherId` is present in the `course` document. Students are stored in `/students/{studentId}`. The grade documents are stored in `/grades/{gradeId}` and contain references to studentId and courseId. Reports related to students are stored in `/reports/{reportId}` and notifications are stored in `/users/{userId}/notifications/{notificationId}`. This design allows for efficient querying and simplifies security rules.  The design uses path-based ownership for private data and a membership map where applicable. Segregation of data based on access needs, such as separating notifications under a user's document, simplifies rule creation and minimizes the risk of exposing sensitive data. This facilitates secure `list` operations, fulfilling the QAPs requirement."
+  }
+}
