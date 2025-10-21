@@ -342,9 +342,3 @@ function EventFormDialog({ isOpen, onClose, onSubmit, event }: { isOpen: boolean
         </Dialog>
     );
 }
-
-    
-
-    
-
-    

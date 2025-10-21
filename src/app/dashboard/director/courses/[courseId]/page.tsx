@@ -29,6 +29,7 @@ import { CoursesContext } from '@/context/CoursesContext';
 import { StudentsContext } from '@/context/StudentsContext';
 import { useFirestore, useCollection, WithId, useMemoFirebase, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type GradeAssignment = {
   courseIds: string[];
@@ -125,7 +126,7 @@ export default function CourseDetailPage() {
           <CardDescription>Rendimiento de los estudiantes en este curso.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="w-full overflow-x-auto">
+          <ScrollArea className="w-full whitespace-nowrap">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -162,7 +163,7 @@ export default function CourseDetailPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>

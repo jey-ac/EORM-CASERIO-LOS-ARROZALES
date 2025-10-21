@@ -73,9 +73,10 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
         };
         
         try {
+            // Add the event to the 'events' collection
             await addDoc(collection(firestore, 'events'), newEventForFirestore);
             
-            // Create a general notification for all users
+            // Also create a notification in the 'notifications' collection to trigger a push
             const notificationForAll: Omit<Notification, 'id'> = {
                 title: `Nuevo Evento: ${newEventData.title}`,
                 description: `Se ha agregado un nuevo evento para el ${format(newEventData.date, "PPP", { locale: es })}.`,
@@ -90,7 +91,8 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
             await addDoc(collection(firestore, 'notifications'), notificationForAll);
 
         } catch (e) {
-            console.error("Error adding event and notification: ", e);
+            console.error("Error adding event and/or notification: ", e);
+            throw e;
         }
     };
 
@@ -105,6 +107,7 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
             });
         } catch(e) {
             console.error("Error updating event: ", e);
+            throw e;
         }
     };
 
@@ -115,6 +118,7 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
             await deleteDoc(eventRef);
         } catch (e) {
             console.error("Error deleting event: ", e);
+            throw e;
         }
     };
 

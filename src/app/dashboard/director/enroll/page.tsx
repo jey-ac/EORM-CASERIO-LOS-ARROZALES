@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, User, FileText, GraduationCap, File, Sheet, Calendar as CalendarIcon, VenetianMask } from 'lucide-react';
+import { UserPlus, User, FileText, GraduationCap, File, Sheet, Calendar as CalendarIcon, VenetianMask, Mail } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -38,6 +38,7 @@ import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, differenceInYears } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -65,18 +66,19 @@ export default function EnrollPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('studentName') as string;
+    const email = formData.get('email') as string;
     const grade = formData.get('grade') as string;
     const parentName = formData.get('parentName') as string;
     const birthCertificate = formData.get('birthCertificate') as string;
     const enrollmentYear = parseInt(formData.get('enrollmentYear') as string, 10);
     const gender = formData.get('gender') as 'masculino' | 'femenino';
 
-    if (name && grade && parentName && birthCertificate && enrollmentYear && gender && dateOfBirth) {
+    if (name && email && grade && parentName && birthCertificate && enrollmentYear && gender && dateOfBirth) {
       try {
-        addStudent({ name, grade, parentName, birthCertificate, enrollmentYear, gender, dateOfBirth });
+        addStudent({ name, email, grade, parentName, birthCertificate, enrollmentYear, gender, dateOfBirth });
         toast({
           title: 'Éxito',
-          description: 'Alumno inscrito exitosamente! ahora puede ser activado en el portal de administrador.',
+          description: '¡Alumno inscrito exitosamente! El estudiante ahora debe ser activado en el portal del administrador.',
         });
         (e.target as HTMLFormElement).reset();
         setDateOfBirth(undefined);
@@ -156,6 +158,13 @@ export default function EnrollPage() {
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input id="studentName" name="studentName" placeholder="Ej: Juan José Pérez García" required className="pl-10" />
                 </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Correo electrónico</Label>
+                  <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input id="email" name="email" type="email" placeholder="ejemplo@correo.com" required className="pl-10" />
+                  </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="grade">Grado a inscribir</Label>
@@ -297,7 +306,7 @@ export default function EnrollPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <ScrollArea className="w-full whitespace-nowrap">
               {filteredStudents.length > 0 ? (
                   <Table>
                       <TableHeader>
@@ -328,9 +337,11 @@ export default function EnrollPage() {
               ) : (
                   <p className="text-muted-foreground text-sm text-center py-4">No hay estudiantes inscritos para el año {yearFilter}.</p>
               )}
-            </div>
+            </ScrollArea>
           </CardContent>
       </Card>
     </div>
   );
 }
+
+    

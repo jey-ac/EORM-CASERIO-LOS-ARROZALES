@@ -24,6 +24,10 @@
           "description": "The email address of the user.",
           "format": "email"
         },
+        "password": {
+          "type": "string",
+          "description": "The user's password. Note: Storing raw passwords is not recommended."
+        },
         "gradeAssignment": {
           "type": "string",
           "description": "The grade or assignment of the user, applicable to students or teachers."
@@ -107,6 +111,13 @@
             "type": "string",
             "format": "date",
             "description": "The student's date of birth."
+        },
+        "fcmTokens": {
+          "type": "array",
+          "description": "An array of Firebase Cloud Messaging registration tokens for sending push notifications.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -516,6 +527,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage data for the Arrozales Academic Observer system, focusing on role-based access and efficient data retrieval. The structure leverages path-based ownership for private user data and membership maps for collaborative data. Denormalization is employed to achieve authorization independence, eliminating the need for `get()` calls in security rules and enabling atomic operations.\n\nUsers are stored in a top-level `/users` collection, and other entities are stored under user subcollections to enable secure `list` operations. The system's design supports role-based access, data segregation, and denormalization for authorization independence.\n\nSpecifically:\n\n*   **Users**: Stored in `/users/{userId}`. This structure provides path-based ownership for user-related data, allowing simple rules to restrict access to a specific user's information. The `role` attribute within each user document facilitates role-based access control.\n*   **Courses**: Stored in `/courses/{courseId}`. Each course document stores the `teacherId` to indicate the teacher assigned to the course. Teachers can modify grades only for courses where their user ID matches the course's `teacherId`. The collection-level read operation is permitted, as there are no differences in access requirements.\n*   **Students**: Stored in `/students/{studentId}`. This structure allows simple rules to restrict access to a specific student's information. The `courseIds` field stores the courses each student is enrolled in.\n*   **Grades**: Stored in `/grades/{gradeId}`. This structure allows grades to be accessed without needing to reference the student, course, or teacher.\n*   **Reports**: Stored in `/reports/{reportId}`. Reports contain `studentId` and `courseId`.\n*   **Notifications**: Stored in `/users/{userId}/notifications/{notificationId}`. This structure enables secure listing of notifications because each user can only access their own notifications."
+    "reasoning": "The Firestore structure is designed to manage data for the Arrozales Academic Observer system, focusing on role-based access and efficient data retrieval. The structure leverages path-based ownership for private user data and membership maps for collaborative data. Denormalization is employed to achieve authorization independence, eliminating the need for `get()` calls in security rules and enabling atomic operations.\n\nUsers are stored in a top-level `/users` collection, and other entities are stored under user subcollections to enable secure `list` operations. The system's design supports role-based access, data segregation, and denormalization for authorization independence.\n\nSpecifically:\n\n*   **Users**: Stored in `/users/{userId}`. This structure provides path-based ownership for user-related data, allowing simple rules to restrict access to a specific user's information. The `role` attribute within each user document facilitates role-based access control.\n*   **Courses**: Stored in `/courses/{courseId}`. Each course document stores the `teacherId` to indicate the teacher assigned to the course. Teachers can modify grades only for courses where their user ID matches the course's `teacherId`. The collection-level read operation is permitted, as there are no differences in access requirements.\n*   **Students**: Stored in `/students/{studentId}`. This structure allows simple rules to restrict access to a specific student's information. The `courseIds` field stores the courses each student is enrolled in.\n*   **Grades**: Stored in `/grades/{gradeId}`. This structure allows grades to be accessed without needing to reference the student, course, or teacher.\n*   **Reports**: Stored in `/reports/{reportId}`. Reports contain `studentId` and `courseId`.\n*   **Notifications**: Stored in `/users/{userId}/notifications/{notificationId}`. This structure enables secure listing of notifications because each user can only access their own notifications.\n*   **Events**: Stored in `/events/{eventId}`. This is a public collection that all users can read to get calendar events."
   }
 }

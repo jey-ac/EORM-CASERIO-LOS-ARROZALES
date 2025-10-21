@@ -12,7 +12,7 @@ import {
   doc,
 } from 'firebase/firestore';
 import { useFirestore, useCollection, WithId, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { DailyAttendance } from '@/lib/mock-data';
+import { DailyAttendance, User } from '@/lib/mock-data';
 
 interface AttendanceContextType {
     dailyAttendances: WithId<DailyAttendance>[];
@@ -40,6 +40,12 @@ export const AttendanceProvider = ({ children }: { children: ReactNode }) => {
     const firestore = useFirestore();
     const { user, isUserLoading } = useUser();
     
+    const userProfileRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: userProfile } = useDoc<User>(userProfileRef);
+
     const teacherAssignmentRef = useMemoFirebase(() => {
         if (!user || !firestore) return null;
         return doc(firestore, 'teacherAssignments', user.uid);
@@ -50,17 +56,21 @@ export const AttendanceProvider = ({ children }: { children: ReactNode }) => {
     const { data: gradeAssignmentsData } = useCollection<GradeAssignment>(gradeAssignmentsCollection);
 
     const attendanceQuery = useMemoFirebase(() => {
-        if (!user || !firestore || isUserLoading || !gradeAssignmentsData) return null;
+        if (!user || !firestore || isUserLoading || !userProfile) return null;
 
         const baseCollection = collection(firestore, 'attendance');
         
-        // Assuming there is a user role property available, e.g. in a user profile context
-        const isTeacher = !!teacherAssignmentData; // Simplified check
-        const isStudent = !isTeacher; // Simplified assumption
+        const isDirectorOrAdmin = userProfile.role === 'director' || userProfile.role === 'administrador';
+        const isTeacher = userProfile.role === 'profesor';
 
-        if (isTeacher) {
+        if (isDirectorOrAdmin) {
+            // Director/Admin gets to see all attendance records.
+            return baseCollection;
+        }
+        
+        if (isTeacher && teacherAssignmentData && gradeAssignmentsData) {
             const assignedGrades = teacherAssignmentData?.gradeIds || [];
-            if (assignedGrades.length === 0) return null; // No grades assigned, no query needed
+            if (assignedGrades.length === 0) return null;
             const courseIds = new Set<string>();
             gradeAssignmentsData.forEach(assignment => {
                 if (assignedGrades.includes(assignment.id)) {
@@ -69,23 +79,16 @@ export const AttendanceProvider = ({ children }: { children: ReactNode }) => {
             });
             const teacherCourseIdList = Array.from(courseIds);
             if(teacherCourseIdList.length > 0) {
+                // Firestore 'in' query is limited to 30 items. Be mindful if a teacher has many courses.
                 return query(baseCollection, where('courseId', 'in', teacherCourseIdList));
             }
-            return null; // No courses for this teacher's grades
+            return null; // Teacher has no courses assigned to their grades.
         }
         
-        if (isStudent) {
-            // This would require knowing the student's courses to be effective.
-            // For now, let's assume students don't query the entire attendance collection directly.
-            // A better pattern would be a subcollection or a more specific query based on student profile.
-            // Returning null to avoid an inefficient/insecure query.
-            return null;
-        }
+        // Students don't query this collection directly.
+        return null;
 
-        // For director/admin, fetch all. Relies on security rules.
-        return baseCollection;
-
-    }, [firestore, user, isUserLoading, teacherAssignmentData, gradeAssignmentsData]);
+    }, [firestore, user, isUserLoading, userProfile, teacherAssignmentData, gradeAssignmentsData]);
     
     const { data: attendanceData, isLoading: loading, error } = useCollection<DailyAttendance>(
       attendanceQuery,

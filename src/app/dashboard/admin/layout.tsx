@@ -9,6 +9,7 @@ import {
   LogOut,
   Users,
   ShieldCheck,
+  Settings,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,6 +39,8 @@ import { useEffect } from 'react';
 import { User } from '@/lib/mock-data';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { doc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { useAuth } from '@/firebase';
 
 export default function AdminLayout({
   children,
@@ -46,23 +49,29 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
   const userDocRef = useMemoFirebase(() => {
       if (!user || !firestore) return null;
-      // Special case for admin, ensure we always point to the users collection
       return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
 
   const { data: adminUser, isLoading: userProfileLoading } = useDoc<User>(userDocRef);
-
 
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
+  
+  const handleLogout = async () => {
+    if(auth) {
+        await signOut(auth);
+        router.push('/login');
+    }
+  }
 
   const menuItems = [
     { href: '/dashboard/admin/users', icon: <Users />, label: 'Gestionar usuarios', tooltip: 'Gestionar usuarios' },
@@ -70,7 +79,7 @@ export default function AdminLayout({
   ]
 
   const UserProfile = () => {
-    if (isUserLoading || userProfileLoading || !adminUser) {
+    if (isUserLoading || userProfileLoading) {
       return (
         <div className="flex items-center gap-3 p-2">
           <div className="h-9 w-9 rounded-full bg-muted animate-pulse"></div>
@@ -81,15 +90,14 @@ export default function AdminLayout({
         </div>
       );
     }
-
-    const displayUser = user?.email === 'rox17jacome@gmail.com' ? {
-        id: user.uid,
+    
+    const displayUser = adminUser || {
+        id: user?.uid || 'admin',
         name: 'Administrador',
-        email: user.email,
+        email: user?.email || 'rox17jacome@gmail.com',
         role: 'administrador',
         status: 'active',
-    } : adminUser;
-
+    };
 
     return (
       <DropdownMenu>
@@ -109,16 +117,22 @@ export default function AdminLayout({
         <DropdownMenuContent className="w-56 mb-2 z-50" align="end" side="top">
           <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+           <DropdownMenuItem asChild>
+              <Link href="/dashboard/admin/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configuración</span>
+              </Link>
+            </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
-            <Link href="/login">Cerrar sesión</Link>
+            <span>Cerrar sesión</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
   }
   
-  if (isUserLoading || userProfileLoading) {
+  if (isUserLoading || userProfileLoading && !adminUser) {
       return (
         <div className="flex h-screen w-full items-center justify-center">
             <GraduationCap className="h-12 w-12 animate-pulse text-primary" />
@@ -126,37 +140,47 @@ export default function AdminLayout({
     );
   }
 
+  const sidebarHeader = (
+    <SidebarHeader>
+      <Link href="/dashboard/admin/users" className="flex items-center gap-3">
+        <div className="rounded-lg bg-destructive p-2 text-destructive-foreground">
+          <GraduationCap className="h-7 w-7" />
+        </div>
+        <span className="text-lg font-semibold">Portal del administrador</span>
+      </Link>
+    </SidebarHeader>
+  );
+
+  const sidebarFooter = (
+    <SidebarFooter>
+      <UserProfile />
+    </SidebarFooter>
+  );
+
+  const sidebarContent = (
+    <SidebarContent>
+      <ScrollArea>
+        <SidebarMenu>
+          {menuItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton href={item.href} tooltip={item.tooltip} isActive={pathname.startsWith(item.href)}>
+                {item.icon}
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </ScrollArea>
+    </SidebarContent>
+  );
+
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="p-4">
-          <Link href="/dashboard/admin/users" className="flex items-center gap-3">
-            <div className="rounded-lg bg-destructive p-2 text-destructive-foreground">
-              <GraduationCap className="h-7 w-7" />
-            </div>
-            <span className="text-lg font-semibold">Portal del administrador</span>
-          </Link>
-        </SidebarHeader>
-        <SidebarContent>
-          <ScrollArea>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton href={item.href} tooltip={item.tooltip} isActive={pathname.startsWith(item.href)}>
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </ScrollArea>
-        </SidebarContent>
-        <SidebarFooter className="p-4">
-          <UserProfile />
-        </SidebarFooter>
+      <Sidebar header={sidebarHeader} footer={sidebarFooter}>
+        {sidebarContent}
       </Sidebar>
-      <SidebarInset className="flex flex-col min-h-svh">
+      <SidebarInset>
         <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
           <div className="flex items-center gap-4">
             <SidebarTrigger className="md:hidden" />

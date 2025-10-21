@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -9,17 +10,18 @@ interface FirebaseClientProviderProps {
   children: ReactNode;
 }
 
-export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  // Initialize Firebase on the client side. Due to how Next.js Client Components work,
-  // this top-level code will only run once per session on the client,
-  // making it safe to call here without useMemo.
-  const firebaseServices = initializeFirebase();
+// Initialize services immediately at the module level.
+// This ensures they are singletons and ready to be used.
+const services = initializeFirebase();
 
+export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
+  // The services are initialized synchronously above, so we can pass them directly.
   return (
     <FirebaseProvider
-      firebaseApp={firebaseServices.firebaseApp}
-      auth={firebaseServices.auth}
-      firestore={firebaseServices.firestore}
+      firebaseApp={services.firebaseApp}
+      auth={services.auth}
+      firestore={services.firestore}
+      functions={services.functions}
     >
       {children}
     </FirebaseProvider>

@@ -39,6 +39,7 @@ import { StudentsContext } from '@/context/StudentsContext';
 import { UsersContext } from '@/context/UsersContext';
 import { doc } from 'firebase/firestore';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { WordOfTheDay } from '@/components/WordOfTheDay';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -74,7 +75,7 @@ export default function StudentDashboard() {
   const { users } = useContext(UsersContext);
   const firestore = useFirestore();
   
-  const student = useMemo(() => students.find(s => s.id === user?.uid), [user, students]);
+  const student = useMemo(() => students.find(s => s.id === user?.uid || s.authUid === user?.uid), [user, students]);
 
   const gradeAssignmentRef = useMemoFirebase(() => {
     if (!firestore || !student?.grade) return null;
@@ -236,6 +237,11 @@ export default function StudentDashboard() {
             </DropdownMenu>
         </div>
       </div>
+
+      <div className="mb-6">
+        <WordOfTheDay />
+      </div>
+      
       <Card>
         <CardHeader>
             <div>
@@ -321,3 +327,5 @@ export default function StudentDashboard() {
     </div>
   );
 }
+
+    

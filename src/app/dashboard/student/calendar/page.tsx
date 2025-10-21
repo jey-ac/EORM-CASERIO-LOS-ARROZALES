@@ -17,6 +17,7 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { CalendarContext } from "@/context/CalendarContext";
 import { CalendarEvent } from "@/lib/mock-data";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const categoryIcons: Record<CalendarEvent['category'], React.ReactNode> = {
   reunion: <Briefcase className="h-5 w-5" />,
@@ -94,26 +95,30 @@ export default function StudentCalendarPage() {
                 <CardTitle>{eventListTitle}</CardTitle>
             </CardHeader>
             <CardContent>
-                <ul className="space-y-4">
-                    {displayEvents.length > 0 ? (
-                        displayEvents.map(event => (
-                            <li key={event.id} className="flex items-start gap-4 p-3 rounded-lg border">
-                                <div className={cn("mt-1 rounded-full p-2", categoryColors[event.category])}>
-                                    {categoryIcons[event.category]}
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold">{event.title}</p>
-                                    {!isDateSelected && <p className="text-sm text-muted-foreground">{format(event.date, "PPP", { locale: es })}</p>}
-                                    {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
-                                </div>
-                            </li>
-                        ))
-                    ) : (
-                        <p className="text-sm text-muted-foreground text-center py-4">No hay eventos para mostrar.</p>
-                    )}
-                </ul>
+                <ScrollArea className="h-[60vh] pr-4">
+                    <ul className="space-y-4">
+                        {displayEvents.length > 0 ? (
+                            displayEvents.map(event => (
+                                <li key={event.id} className="flex items-start gap-4 p-3 rounded-lg border">
+                                    <div className={cn("mt-1 rounded-full p-2", categoryColors[event.category])}>
+                                        {categoryIcons[event.category]}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-semibold">{event.title}</p>
+                                        {!isDateSelected && <p className="text-sm text-muted-foreground">{format(event.date, "PPP", { locale: es })}</p>}
+                                        {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
+                                    </div>
+                                </li>
+                            ))
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No hay eventos para mostrar.</p>
+                        )}
+                    </ul>
+                </ScrollArea>
             </CardContent>
         </Card>
     </div>
   );
 }
+
+    

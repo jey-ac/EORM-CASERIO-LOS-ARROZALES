@@ -195,7 +195,7 @@ function AssignmentForm({
                 {loading ? <p className="text-sm text-muted-foreground text-center py-2">Cargando cursos...</p> 
                 : mockCourses.length > 0 ? (
                     mockCourses.map(course => (
-                        <div key={course.id} className="flex items-center space-x-2">
+                        <div key={course.id} className="flex items-center space-x-2 py-1">
                             <Checkbox
                                 id={`course-${course.id}`}
                                 checked={selectedCourses.includes(course.id)}

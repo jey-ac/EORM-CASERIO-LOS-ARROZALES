@@ -9,9 +9,11 @@ export type User = {
     status: 'active' | 'inactive';
     createdAt?: any;
     fcmTokens?: string[];
+    twoFactorSecret?: string;
 };
 
 export type Student = User & {
+    authUid?: string;
     role: 'estudiante';
     grade: string;
     parentName?: string;

@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { CalendarContext } from "@/context/CalendarContext";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, WithId } from "@/firebase";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const categoryIcons: Record<CalendarEvent['category'], React.ReactNode> = {
   reunion: <Briefcase className="h-5 w-5" />,
@@ -185,32 +186,34 @@ export default function TeacherCalendarPage() {
           <CardTitle>{eventListTitle}</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-4">
-            {displayEvents.length > 0 ? (
-              displayEvents.map(event => (
-                <li key={event.id} className="flex items-start gap-4 p-3 rounded-lg border">
-                  <div className={cn("mt-1 rounded-full p-2", categoryColors[event.category])}>
-                    {categoryIcons[event.category]}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold">{event.title}</p>
-                    {!isDateSelected && <p className="text-sm text-muted-foreground">{format(event.date, "PPP", { locale: es })}</p>}
-                    {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
-                    <div className="mt-2 flex gap-2">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditForm(event)}>
-                        <PenSquare className="h-4 w-4" />
-                      </Button>
-                      <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+          <ScrollArea className="h-[60vh] pr-4">
+            <ul className="space-y-4">
+              {displayEvents.length > 0 ? (
+                displayEvents.map(event => (
+                  <li key={event.id} className="flex items-start gap-4 p-3 rounded-lg border">
+                    <div className={cn("mt-1 rounded-full p-2", categoryColors[event.category])}>
+                      {categoryIcons[event.category]}
                     </div>
-                  </div>
-                </li>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No hay eventos para mostrar.</p>
-            )}
-          </ul>
+                    <div className="flex-1">
+                      <p className="font-semibold">{event.title}</p>
+                      {!isDateSelected && <p className="text-sm text-muted-foreground">{format(event.date, "PPP", { locale: es })}</p>}
+                      {event.description && <p className="text-sm text-muted-foreground">{event.description}</p>}
+                      <div className="mt-2 flex gap-2">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditForm(event)}>
+                          <PenSquare className="h-4 w-4" />
+                        </Button>
+                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDeleteEvent(event.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No hay eventos para mostrar.</p>
+              )}
+            </ul>
+          </ScrollArea>
         </CardContent>
       </Card>
       <EventFormDialog

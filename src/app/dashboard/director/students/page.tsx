@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useMemo, useContext, useEffect } from 'react';
-import { File, PenSquare, Search, Sheet } from 'lucide-react';
+import { File, PenSquare, Search, Sheet, Calendar as CalendarIcon } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -48,7 +48,6 @@ import { CoursesContext } from '@/context/CoursesContext';
 import { GradesContext } from '@/context/GradesContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
-import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, differenceInYears } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -285,6 +284,11 @@ function StudentFormDialog({ isOpen, onClose, onSubmit, student }: { isOpen: boo
                       <Label htmlFor="name">Nombre</Label>
                       <Input id="name" name="name" defaultValue={student?.name} required />
                   </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="email">Correo electrónico</Label>
+                    <Input id="email" name="email" type="email" defaultValue={student.email} required disabled />
+                     <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
+                </div>
                   <div className="space-y-2">
                       <Label htmlFor="grade">Grado</Label>
                       <Select name="grade" defaultValue={student?.grade} required>
@@ -332,7 +336,7 @@ function StudentFormDialog({ isOpen, onClose, onSubmit, student }: { isOpen: boo
                                   !dateOfBirth && "text-muted-foreground"
                               )}
                               >
-                              <Calendar className="mr-2 h-4 w-4" />
+                              <CalendarIcon className="mr-2 h-4 w-4" />
                               {dateOfBirth ? format(dateOfBirth, "PPP", { locale: es }) : <span>Seleccione una fecha</span>}
                               </Button>
                           </PopoverTrigger>

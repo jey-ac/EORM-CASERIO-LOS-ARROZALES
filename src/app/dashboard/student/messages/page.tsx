@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ConversationsContext } from '@/context/ConversationsContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, WithId } from '@/firebase';
@@ -108,164 +108,158 @@ export default function StudentMessagesPage() {
             setDeletingConversationId(null);
         }
     }
+    
+    if (selectedConversation && user) {
+        const otherParticipant = getOtherParticipant(selectedConversation.participants);
+        return (
+             <div className="flex flex-col h-[calc(100vh-4rem)] bg-muted/20">
+                <div className="p-4 border-b flex items-center gap-4 bg-card shrink-0">
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedConversationId(null)}>
+                        <ArrowLeft className="h-5 w-5"/>
+                        <span className="sr-only">Volver a conversaciones</span>
+                    </Button>
+                    <Avatar className="h-10 w-10 border">
+                        <AvatarImage src="" data-ai-hint="user avatar" />
+                        <AvatarFallback>{otherParticipant?.name.charAt(0) || 'U'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <h2 className="text-lg font-semibold tracking-tight">{otherParticipant?.name || 'Usuario desconocido'}</h2>
+                        <p className="text-sm text-muted-foreground capitalize">{otherParticipant?.role || 'Desconocido'}</p>
+                    </div>
+                </div>
+                <ScrollArea className="flex-1 p-4">
+                    <div className="space-y-6">
+                        {selectedConversation.messages.map((msg, index) => (
+                            <div
+                                key={index}
+                                className={cn(
+                                    "flex items-end gap-3",
+                                    msg.senderId === user.uid ? "justify-end" : "justify-start"
+                                )}
+                            >
+                                {msg.senderId !== user.uid && (
+                                    <Avatar className="h-9 w-9 border">
+                                        <AvatarImage src="" data-ai-hint="user avatar" />
+                                        <AvatarFallback>{otherParticipant?.name.charAt(0) || 'U'}</AvatarFallback>
+                                    </Avatar>
+                                )}
+                                <div className="flex flex-col gap-1">
+                                    <Card className={cn(
+                                        "max-w-xs md:max-w-md w-fit rounded-xl px-4 py-3",
+                                        msg.senderId === user.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none"
+                                    )}>
+                                        <p className="text-sm break-words">{msg.text}</p>
+                                    </Card>
+                                    <span className={cn("text-xs text-muted-foreground", msg.senderId === user.uid ? "text-right" : "text-left")}>{msg.timestamp}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+                <div className="p-4 border-t bg-card shrink-0">
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const input = e.currentTarget.message as HTMLInputElement;
+                        onSendMessage(input.value);
+                        input.value = '';
+                    }} className="flex items-center gap-2">
+                        <Input name="message" placeholder="Escribe tu mensaje..." autoComplete='off' className="bg-background"/>
+                        <Button type="submit" size="icon" className="flex-shrink-0">
+                            <SendHorizonal className="h-5 w-5"/>
+                            <span className="sr-only">Enviar</span>
+                        </Button>
+                    </form>
+                </div>
+            </div>
+        )
+    }
 
     return (
-    <div className={cn("grid md:grid-cols-1 lg:grid-cols-4 gap-4 h-full", selectedConversationId ? "grid-cols-1" : "grid-cols-1")}>
-        <div className={cn(
-            "border-r bg-card text-card-foreground flex-col h-full",
-            selectedConversationId ? "hidden lg:flex" : "flex"
-            )}>
-            <div className="p-4 border-b shrink-0">
-                <h2 className="text-xl font-semibold tracking-tight mb-4">Bandeja de entrada</h2>
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input 
-                        placeholder="Buscar conversaciones..." 
-                        className="pl-10 bg-background"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </div>
-            <div className="p-4 shrink-0">
-                <Button className="w-full" variant="outline" onClick={() => setIsNewMessageDialogOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4"/>
-                    Nuevo mensaje
-                </Button>
-            </div>
-            <ScrollArea className="flex-1">
-                <nav className="flex flex-col gap-1 p-2">
-                    {filteredConversations.length > 0 ? filteredConversations.map(conv => {
-                        const otherUser = getOtherParticipant(conv.participants);
-                        const lastMessage = conv.messages[conv.messages.length - 1];
-                        const isUnread = user ? !conv.readBy?.includes(user.uid) && lastMessage?.senderId !== user.uid : false;
-                        return (
-                            <div key={conv.id} className="relative group">
-                                <Link
-                                    href="#"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        handleConversationSelect(conv.id)
-                                    }}
-                                    className={cn(
-                                        "flex items-start gap-4 rounded-lg p-3 text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground",
-                                        selectedConversationId === conv.id && "bg-accent text-accent-foreground"
-                                    )}
-                                >
-                                    <Avatar className="h-10 w-10 border">
-                                        <AvatarImage src="" data-ai-hint="user avatar" />
-                                        <AvatarFallback>{otherUser?.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 overflow-hidden">
-                                        <div className="flex justify-between items-center">
-                                            <p className={cn("font-semibold truncate", isUnread && "text-foreground")}>{otherUser?.name}</p>
-                                            <span className="text-xs">{lastMessage?.timestamp}</span>
-                                        </div>
-                                        <p className="text-sm truncate capitalize text-muted-foreground/80">{otherUser?.role}</p>
-                                        <p className={cn("text-sm truncate mt-1", isUnread && "font-bold text-foreground")}>{lastMessage?.text}</p>
-                                    </div>
-                                    {isUnread && <div className="mt-1 h-2 w-2 rounded-full bg-primary"></div>}
-                                </Link>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => setDeletingConversationId(conv.id)}
-                                >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                    <span className="sr-only">Eliminar conversación</span>
-                                </Button>
-                            </div>
-                        )
-                    }) : (
-                        <div className="text-center text-muted-foreground p-8">No hay conversaciones.</div>
-                    )}
-                </nav>
-            </ScrollArea>
-        </div>
-        <div className={cn("lg:col-span-3", !selectedConversationId && "hidden lg:hidden")}>
-        {selectedConversation && user ? (
-            <div className="flex flex-col bg-muted/20 h-full">
-            <div className="p-4 border-b flex items-center gap-4 bg-card shrink-0">
-                <Button variant="ghost" size="icon" onClick={() => setSelectedConversationId(null)} className="lg:hidden">
-                    <ArrowLeft className="h-5 w-5"/>
-                    <span className="sr-only">Volver a conversaciones</span>
-                </Button>
-                <Avatar className="h-10 w-10 border">
-                    <AvatarImage src="" data-ai-hint="user avatar" />
-                    <AvatarFallback>{getOtherParticipant(selectedConversation.participants)?.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <h2 className="text-lg font-semibold tracking-tight">{getOtherParticipant(selectedConversation.participants)?.name || 'Usuario desconocido'}</h2>
-                    <p className="text-sm text-muted-foreground capitalize">{getOtherParticipant(selectedConversation.participants)?.role || 'Desconocido'}</p>
-                </div>
-            </div>
-            <ScrollArea className="flex-1 p-4">
-                <div className="space-y-6">
-                    {selectedConversation.messages.map((msg, index) => (
-                        <div
-                            key={index}
-                            className={cn(
-                                "flex items-end gap-3",
-                                msg.senderId === user.uid ? "justify-end" : "justify-start"
-                            )}
-                        >
-                            {msg.senderId !== user.uid && (
-                                <Avatar className="h-9 w-9 border">
-                                    <AvatarImage src="" data-ai-hint="user avatar" />
-                                    <AvatarFallback>{getOtherParticipant(selectedConversation.participants)?.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                            )}
-                            <div className="flex flex-col gap-1">
-                                <Card className={cn(
-                                    "max-w-md w-fit rounded-xl px-4 py-3",
-                                    msg.senderId === user.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card rounded-bl-none"
-                                )}>
-                                    <p className="text-sm">{msg.text}</p>
-                                </Card>
-                                <span className={cn("text-xs text-muted-foreground", msg.senderId === user.uid ? "text-right" : "text-left")}>{msg.timestamp}</span>
-                            </div>
+        <Card className="h-full">
+            <CardHeader>
+                <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+                    <div>
+                        <CardTitle>Bandeja de entrada</CardTitle>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input 
+                                placeholder="Buscar conversaciones..." 
+                                className="pl-10 bg-background"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
                         </div>
-                    ))}
+                        <Button className="w-full sm:w-auto" variant="outline" onClick={() => setIsNewMessageDialogOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4"/>
+                            Nuevo mensaje
+                        </Button>
+                    </div>
                 </div>
-            </ScrollArea>
-            <div className="p-4 border-t bg-card shrink-0">
-                <form onSubmit={(e) => {
-                    e.preventDefault();
-                    const input = e.currentTarget.message as HTMLInputElement;
-                    onSendMessage(input.value);
-                    input.value = '';
-                }} className="flex items-center gap-2">
-                    <Input name="message" placeholder="Escribe tu mensaje..." autoComplete='off' className="bg-background"/>
-                    <Button type="submit" size="icon" className="flex-shrink-0">
-                        <SendHorizonal className="h-5 w-5"/>
-                        <span className="sr-only">Enviar</span>
-                    </Button>
-                </form>
-            </div>
-            </div>
-        ) : (
-            <div className="hidden lg:flex items-center justify-center h-full text-muted-foreground">
-                <p>Seleccione una conversación para empezar a chatear.</p>
-            </div>
-        )}
-        </div>
-        <NewMessageDialog 
-            isOpen={isNewMessageDialogOpen}
-            onClose={() => setIsNewMessageDialogOpen(false)}
-            onSendMessage={(recipientId, message) => {
-                onStartNewConversation(recipientId, message);
-                setIsNewMessageDialogOpen(false);
-            }}
-        />
-        <DeleteConfirmationDialog
-            isOpen={!!deletingConversationId}
-            onClose={() => setDeletingConversationId(null)}
-            onConfirm={handleDeleteConversation}
-            conversationPartnerName={deletingConversationId ? getOtherParticipant(conversations.find(c => c.id === deletingConversationId)?.participants || [])?.name : undefined}
-        />
-    </div>
-  );
+            </CardHeader>
+            <CardContent>
+                <ScrollArea className="h-[calc(100vh-14rem)]">
+                    <nav className="flex flex-col gap-1 pr-4">
+                        {filteredConversations.length > 0 ? filteredConversations.map(conv => {
+                            const otherUser = getOtherParticipant(conv.participants);
+                            const lastMessage = conv.messages[conv.messages.length - 1];
+                            const isUnread = user ? !conv.readBy?.includes(user.uid) && lastMessage?.senderId !== user.uid : false;
+                            return (
+                                <div key={conv.id} className="relative group">
+                                    <button
+                                        onClick={() => handleConversationSelect(conv.id)}
+                                        className={cn(
+                                            "flex w-full items-start gap-4 rounded-lg p-3 text-left text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground border",
+                                        )}
+                                    >
+                                        <Avatar className="h-10 w-10 border">
+                                            <AvatarImage src="" data-ai-hint="user avatar" />
+                                            <AvatarFallback>{otherUser?.name.charAt(0) || 'U'}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 overflow-hidden">
+                                            <div className="flex justify-between items-center">
+                                                <p className={cn("font-semibold truncate", isUnread && "text-foreground")}>{otherUser?.name}</p>
+                                                <span className="text-xs">{lastMessage?.timestamp}</span>
+                                            </div>
+                                            <p className="text-sm truncate capitalize text-muted-foreground/80">{otherUser?.role}</p>
+                                            <p className={cn("text-sm truncate mt-1", isUnread && "font-bold text-foreground")}>{lastMessage?.text}</p>
+                                        </div>
+                                        {isUnread && <div className="mt-1 h-2 w-2 rounded-full bg-primary"></div>}
+                                    </button>
+                                     <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={(e) => { e.stopPropagation(); setDeletingConversationId(conv.id); }}
+                                    >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <span className="sr-only">Eliminar conversación</span>
+                                    </Button>
+                                </div>
+                            )
+                        }) : (
+                            <div className="text-center text-muted-foreground p-8">No hay conversaciones.</div>
+                        )}
+                    </nav>
+                </ScrollArea>
+                <NewMessageDialog 
+                    isOpen={isNewMessageDialogOpen}
+                    onClose={() => setIsNewMessageDialogOpen(false)}
+                    onSendMessage={(recipientId, message) => {
+                        onStartNewConversation(recipientId, message);
+                        setIsNewMessageDialogOpen(false);
+                    }}
+                />
+                <DeleteConfirmationDialog
+                    isOpen={!!deletingConversationId}
+                    onClose={() => setDeletingConversationId(null)}
+                    onConfirm={handleDeleteConversation}
+                    conversationPartnerName={deletingConversationId ? getOtherParticipant(conversations.find(c => c.id === deletingConversationId)?.participants || [])?.name : undefined}
+                />
+            </CardContent>
+        </Card>
+    );
 }
 
 

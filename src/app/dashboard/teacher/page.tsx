@@ -26,9 +26,12 @@ import { useMemo, useContext } from 'react';
 import { GradesContext } from '@/context/GradesContext';
 import { StudentsContext } from '@/context/StudentsContext';
 import { CoursesContext } from '@/context/CoursesContext';
+import { AttendanceContext } from '@/context/AttendanceContext';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
+import { WordOfTheDay } from '@/components/WordOfTheDay';
 
 
 const chartConfig = {
@@ -65,6 +68,7 @@ export default function TeacherDashboard() {
   const { grades } = useContext(GradesContext);
   const { students } = useContext(StudentsContext);
   const { courses } = useContext(CoursesContext);
+  const { dailyAttendances } = useContext(AttendanceContext);
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -130,7 +134,6 @@ export default function TeacherDashboard() {
     const teacherGrades = teacherAssignmentData?.gradeIds || [];
     const studentsOfTeacher = students.filter(s => teacherGrades.includes(s.grade));
     
-    // Get the most recent grades for these students across all teacher's courses
     const performanceData: { studentName: string, courseName: string, average: number }[] = [];
     
     studentsOfTeacher.forEach(student => {
@@ -146,17 +149,50 @@ export default function TeacherDashboard() {
       });
     });
 
-    // A real implementation might sort by date, but for now we just take the first few
-    return performanceData;
+    return performanceData.sort((a, b) => b.average - a.average);
   }, [grades, students, teacherCourses, teacherAssignmentData, assignmentsLoading, teacherAssignmentLoading]);
 
 
   const totalStudents = studentsInTeacherCourses.length;
 
-  // Simulación de asistencia más detallada
-  const studentsAbsent = Math.floor(totalStudents * 0.1); // 10% absent
-  const studentsLate = Math.floor(totalStudents * 0.05); // 5% late
-  const studentsPresent = totalStudents - studentsAbsent - studentsLate;
+  const todayString = format(new Date(), 'yyyy-MM-dd');
+  const teacherAttendanceToday = useMemo(() => {
+      const teacherCourseIds = new Set(teacherCourses.map(c => c.id));
+      const todaysAttendancesForTeacher = dailyAttendances.filter(att => 
+          att.date === todayString && teacherCourseIds.has(att.courseId)
+      );
+      
+      if (todaysAttendancesForTeacher.length === 0) {
+        return { present: '-', absent: '-', late: '-' };
+      }
+
+      const allRecordsForToday = todaysAttendancesForTeacher.flatMap(att => att.records);
+
+      const summary = { present: 0, absent: 0, late: 0 };
+      const processedStudents = new Set<string>();
+
+      studentsInTeacherCourses.forEach(student => {
+        const studentRecords = allRecordsForToday.filter(r => r.studentId === student.id);
+        
+        if (processedStudents.has(student.id)) return;
+        processedStudents.add(student.id);
+
+        if (studentRecords.length === 0) {
+          summary.absent++;
+          return;
+        }
+
+        if (studentRecords.some(r => r.status === 'ausente')) {
+          summary.absent++;
+        } else if (studentRecords.some(r => r.status.startsWith('tardanza'))) {
+          summary.late++;
+        } else {
+          summary.present++;
+        }
+      });
+      
+      return summary;
+  }, [dailyAttendances, todayString, teacherCourses, studentsInTeacherCourses]);
 
   return (
     <div className="grid gap-4 md:gap-6">
@@ -167,8 +203,8 @@ export default function TeacherDashboard() {
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{studentsPresent}</div>
-            <p className="text-xs text-muted-foreground">de {totalStudents} estudiantes</p>
+            <div className="text-2xl font-bold">{teacherAttendanceToday.present}</div>
+            <p className="text-xs text-muted-foreground">{typeof teacherAttendanceToday.present === 'number' ? `de ${totalStudents} estudiantes` : 'No se ha tomado asistencia'}</p>
           </CardContent>
         </Card>
         <Card>
@@ -177,8 +213,8 @@ export default function TeacherDashboard() {
             <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{studentsAbsent}</div>
-             <p className="text-xs text-muted-foreground">de {totalStudents} estudiantes</p>
+            <div className="text-2xl font-bold">{teacherAttendanceToday.absent}</div>
+             <p className="text-xs text-muted-foreground">{typeof teacherAttendanceToday.absent === 'number' ? `de ${totalStudents} estudiantes` : 'No se ha tomado asistencia'}</p>
           </CardContent>
         </Card>
          <Card>
@@ -187,8 +223,8 @@ export default function TeacherDashboard() {
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{studentsLate}</div>
-             <p className="text-xs text-muted-foreground">de {totalStudents} estudiantes</p>
+            <div className="text-2xl font-bold">{teacherAttendanceToday.late}</div>
+             <p className="text-xs text-muted-foreground">{typeof teacherAttendanceToday.late === 'number' ? `de ${totalStudents} estudiantes` : 'No se ha tomado asistencia'}</p>
           </CardContent>
         </Card>
         <Card>
@@ -203,17 +239,25 @@ export default function TeacherDashboard() {
         </Card>
       </div>
 
+      <WordOfTheDay />
+
       <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
         <Card>
            <CardHeader>
             <CardTitle>Rendimiento general por curso</CardTitle>
             <CardDescription>Promedio de calificaciones en sus cursos.</CardDescription>
            </CardHeader>
-          <CardContent>
+          <CardContent className="pl-2">
              <ChartContainer config={chartConfig} className="h-[250px] w-full">
               <BarChart accessibilityLayer data={courseAverages}>
                 <CartesianGrid vertical={false} />
-                <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) => value.slice(0, 3)}
+                />
                 <YAxis domain={[50, 100]} />
                 <Tooltip
                   cursor={false}
@@ -231,8 +275,8 @@ export default function TeacherDashboard() {
                 <CardTitle>Rendimiento reciente de estudiantes</CardTitle>
                 <CardDescription>Un vistazo al rendimiento de los estudiantes en sus cursos.</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
-                 <ScrollArea className="h-[250px] w-full whitespace-nowrap">
+            <CardContent>
+                <ScrollArea className="h-[250px]">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -263,3 +307,7 @@ export default function TeacherDashboard() {
     </div>
   );
 }
+
+    
+
+    

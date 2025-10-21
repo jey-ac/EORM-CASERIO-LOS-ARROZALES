@@ -11,12 +11,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { GradesContext } from '@/context/GradesContext';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { collection, query, where, getDocs, or, Timestamp } from 'firebase/firestore';
 import { Notification } from '@/lib/mock-data';
 import { StudentsContext } from '@/context/StudentsContext';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function StudentNotificationsPage() {
   const { user } = useUser();
@@ -26,7 +27,11 @@ export default function StudentNotificationsPage() {
   const [relevantNotifications, setRelevantNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const student = useMemo(() => students.find(s => s.id === user?.uid), [students, user]);
+  const student = useMemo(() => {
+    if (!user || !students) return null;
+    return students.find(s => s.authUid === user.uid || s.id === user.uid);
+  }, [students, user]);
+  
   const studentCourseIds = useMemo(() => {
     if (!student) return [];
     return grades.filter(g => g.studentId === student.id).map(g => g.courseId);
@@ -36,20 +41,28 @@ export default function StudentNotificationsPage() {
   useEffect(() => {
     const fetchNotifications = async () => {
       setIsLoading(true);
-      console.log('STUDENT NOTIFICATIONS: Fetching...');
       if (!user || !firestore || !student) {
-        console.log('STUDENT NOTIFICATIONS: User, firestore, or student profile not ready. Aborting.');
         setIsLoading(false);
         return;
       }
-
-      console.log('STUDENT NOTIFICATIONS: User ID:', user.uid);
-      console.log('STUDENT NOTIFICATIONS: Student Course IDs:', studentCourseIds);
-
+      
       try {
         const notificationsRef = collection(firestore, 'notifications');
-        // A simplified, robust query to get all potentially relevant notifications.
-        const q = query(notificationsRef, where('recipient.type', 'in', ['all', 'course', 'user']));
+        const conditions = [];
+
+        // Condition 1: Notifications for 'all'
+        conditions.push(where('recipient.type', '==', 'all'));
+        
+        // Condition 2: Notifications for the specific user
+        conditions.push(where('recipient.id', '==', user.uid));
+
+        // Condition 3: Notifications for the courses the student is in
+        // Firestore 'in' query supports up to 30 elements.
+        if (studentCourseIds.length > 0) {
+          conditions.push(where('recipient.id', 'in', studentCourseIds));
+        }
+        
+        const q = query(notificationsRef, or(...conditions));
         
         const querySnapshot = await getDocs(q);
         const fetched: any[] = [];
@@ -57,23 +70,7 @@ export default function StudentNotificationsPage() {
           fetched.push({ id: doc.id, ...doc.data() });
         });
         
-        console.log('STUDENT NOTIFICATIONS: Fetched', fetched.length, 'potentially relevant notifications.');
-
-        // Filter on the client side for maximum safety
-        const filtered = fetched.filter(notification => {
-          const recipient = notification.recipient;
-          if (!recipient) return false;
-          
-          if (recipient.type === 'all') return true;
-          if (recipient.type === 'user' && recipient.id === user.uid) return true;
-          if (recipient.type === 'course' && studentCourseIds.includes(recipient.id)) return true;
-          
-          return false;
-        });
-        
-        console.log('STUDENT NOTIFICATIONS: Filtered down to', filtered.length, 'notifications for this student.');
-
-        const sorted = filtered.sort((a, b) => {
+        const sorted = fetched.sort((a, b) => {
             const timeA = (a.createdAt as Timestamp)?.toDate?.().getTime() || 0;
             const timeB = (b.createdAt as Timestamp)?.toDate?.().getTime() || 0;
             return timeB - timeA;
@@ -85,12 +82,12 @@ export default function StudentNotificationsPage() {
         console.error("STUDENT NOTIFICATIONS: Error fetching from Firestore:", error);
       } finally {
         setIsLoading(false);
-        console.log('STUDENT NOTIFICATIONS: Fetch complete.');
       }
     };
 
-    // We depend on `student` being available, which means student context has loaded.
-    fetchNotifications();
+    if (student) { // Only fetch if we have identified the student
+        fetchNotifications();
+    }
   }, [user, firestore, student, studentCourseIds]);
 
 
@@ -104,30 +101,32 @@ export default function StudentNotificationsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-4">
-            {isLoading ? (
-              <li className="text-center text-muted-foreground p-4">Cargando notificaciones...</li>
-            ) : relevantNotifications.length > 0 ? (
-              relevantNotifications.map((notification) => (
-                <li key={notification.id} className="flex items-start gap-4 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
-                  <div className="mt-1 rounded-full bg-primary p-2 text-primary-foreground">
-                    <Bell className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">{notification.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {notification.description}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {`enviado ${format(new Date(notification.date), "PPP 'a las' p", { locale: es })}`}
-                    </p>
-                  </div>
-                </li>
-              ))
-            ) : (
-              <li className="text-center text-muted-foreground p-4">No tienes notificaciones.</li>
-            )}
-          </ul>
+          <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
+            <ul className="space-y-4">
+              {isLoading ? (
+                <li className="text-center text-muted-foreground p-4">Cargando notificaciones...</li>
+              ) : relevantNotifications.length > 0 ? (
+                relevantNotifications.map((notification) => (
+                  <li key={notification.id} className="flex items-start gap-4 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+                    <div className="mt-1 rounded-full bg-primary p-2 text-primary-foreground">
+                      <Bell className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{notification.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {notification.description}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {`enviado ${format(new Date(notification.date), "PPP 'a las' p", { locale: es })}`}
+                      </p>
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li className="text-center text-muted-foreground p-4">No tienes notificaciones.</li>
+              )}
+            </ul>
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>

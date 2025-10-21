@@ -241,12 +241,12 @@ function AssignmentForm({
           </div>
           <div className="space-y-2">
             <Label>Grados asignados</Label>
-            <div className="space-y-2 rounded-md border p-2 min-h-[6rem]">
+            <ScrollArea className="space-y-2 rounded-md border p-2 min-h-[6rem] max-h-48">
                 {currentAssignments.length > 0 ? (
                     currentAssignments.map(grade => (
-                        <div key={grade} className="flex items-center justify-between">
+                        <div key={grade} className="flex items-center justify-between p-1">
                             <span>{grade}</span>
-                            <Button variant="ghost" size="icon" onClick={() => handleRemoveGrade(grade)}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveGrade(grade)}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                                 <span className="sr-only">Eliminar</span>
                             </Button>
@@ -255,7 +255,7 @@ function AssignmentForm({
                 ) : (
                     <p className="text-sm text-muted-foreground text-center py-2">No hay grados asignados.</p>
                 )}
-            </div>
+            </ScrollArea>
           </div>
         </div>
         <DialogFooter>

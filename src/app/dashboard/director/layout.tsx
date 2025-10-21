@@ -15,6 +15,7 @@ import {
   UserPlus,
   Users,
   Calendar,
+  Settings,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -118,6 +119,12 @@ export default function DirectorLayout({
             <DropdownMenuContent className="w-56 mb-2 z-50" align="end" side="top">
                 <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/director/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Configuración</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem>
                     <LogOut className="mr-2 h-4 w-4" />
                     <Link href="/login">Cerrar sesión</Link>
@@ -137,15 +144,23 @@ export default function DirectorLayout({
 
   return (
       <SidebarProvider>
-        <Sidebar>
-          <SidebarHeader className="p-4">
-            <Link href="/dashboard/director" className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary p-2 text-primary-foreground">
-                <GraduationCap className="h-7 w-7" />
-              </div>
-              <span className="text-lg font-semibold">Escuela Los Arrozales</span>
-            </Link>
-          </SidebarHeader>
+        <Sidebar
+          header={
+            <SidebarHeader>
+              <Link href="/dashboard/director" className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary p-2 text-primary-foreground">
+                  <GraduationCap className="h-7 w-7" />
+                </div>
+                <span className="text-lg font-semibold">Escuela Los Arrozales</span>
+              </Link>
+            </SidebarHeader>
+          }
+          footer={
+            <SidebarFooter>
+              <UserProfile />
+            </SidebarFooter>
+          }
+        >
           <SidebarContent>
             <ScrollArea>
               <SidebarMenu>
@@ -165,11 +180,8 @@ export default function DirectorLayout({
               </SidebarMenu>
             </ScrollArea>
           </SidebarContent>
-          <SidebarFooter className="p-4">
-            <UserProfile />
-          </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="flex flex-col min-h-svh">
+        <SidebarInset>
           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />

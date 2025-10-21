@@ -24,6 +24,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@
 import { UsersContext } from '@/context/UsersContext';
 import { CoursesContext } from '@/context/CoursesContext';
 import { collection, getDocs, query, or, where, Timestamp, doc } from 'firebase/firestore';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type GradeAssignment = {
   courseIds: string[];
@@ -72,34 +73,28 @@ export default function NotificationsPage() {
 
     useEffect(() => {
       const fetchNotifications = async () => {
-        // Wait until we have all required data
-        if (!user || !firestore || assignmentsLoading || teacherAssignmentLoading) {
-            return;
-        }
-
-        // Now `teacherCourses` is guaranteed to be stable and calculated
-        const teacherCourseIds = teacherCourses.map(c => c.id);
-        const notificationsRef = collection(firestore, 'notifications');
-        
-        const conditions = [
-          where('recipient.type', '==', 'all'),
-          where('recipient.id', '==', user.uid)
-        ];
-
-        // IMPORTANT: Only add the 'in' query if the array is not empty.
-        if (teacherCourseIds.length > 0) {
-          conditions.push(where('recipient.id', 'in', teacherCourseIds));
-        }
-        
-        const q = query(notificationsRef, or(...conditions));
+        if (!user || !firestore) return;
 
         try {
+            const notificationsRef = collection(firestore, 'notifications');
+            const q = query(notificationsRef);
             const querySnapshot = await getDocs(q);
+
             const fetched: any[] = [];
             querySnapshot.forEach((doc) => {
                 fetched.push({ id: doc.id, ...doc.data() });
             });
-            setRelevantNotifications(fetched.sort((a,b) => {
+            
+            const filtered = fetched.filter(notification => {
+                const recipient = notification.recipient;
+                if (!recipient) return false;
+                if (recipient.type === 'all' && notification.senderId.includes('director')) return true;
+                if (recipient.type === 'teacher' && recipient.id === user.uid) return true;
+                if (notification.senderId === user.uid) return true;
+                return false;
+            });
+
+            setRelevantNotifications(filtered.sort((a,b) => {
                 const timeA = (a.createdAt as Timestamp)?.toDate()?.getTime() || 0;
                 const timeB = (b.createdAt as Timestamp)?.toDate()?.getTime() || 0;
                 return timeB - timeA;
@@ -110,7 +105,7 @@ export default function NotificationsPage() {
       }
 
       fetchNotifications();
-    }, [user, firestore, teacherCourses, assignmentsLoading, teacherAssignmentLoading, addNotification]);
+    }, [user, firestore, addNotification]);
 
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -164,29 +159,31 @@ export default function NotificationsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-4">
-            {relevantNotifications.map((notification) => {
-              const senderRole = getSenderRole(notification.senderId);
-              return (
-              <li key={notification.id} className="flex items-start gap-4 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
-                <div className={cn(
-                    "mt-1 rounded-full p-2 text-primary-foreground",
-                    senderRole === 'director' ? 'bg-secondary text-secondary-foreground' : 'bg-primary'
-                )}>
-                  <Bell className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-semibold">{notification.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {notification.description}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {`enviado ${format(new Date(notification.date), "PPP 'a las' p", { locale: es })}`}
-                  </p>
-                </div>
-              </li>
-            )})}
-          </ul>
+          <ScrollArea className="h-[70vh] pr-4">
+            <ul className="space-y-4">
+              {relevantNotifications.map((notification) => {
+                const senderRole = getSenderRole(notification.senderId);
+                return (
+                <li key={notification.id} className="flex items-start gap-4 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+                  <div className={cn(
+                      "mt-1 rounded-full p-2 text-primary-foreground",
+                      senderRole === 'director' ? 'bg-secondary text-secondary-foreground' : 'bg-primary'
+                  )}>
+                    <Bell className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">{notification.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {notification.description}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {`enviado ${format(new Date(notification.date), "PPP 'a las' p", { locale: es })}`}
+                    </p>
+                  </div>
+                </li>
+              )})}
+            </ul>
+          </ScrollArea>
         </CardContent>
       </Card>
 

@@ -40,10 +40,13 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { NotificationsContext } from '@/context/NotificationsContext';
-import { useUser } from '@/firebase';
-import { StudentsContext } from '@/context/StudentsContext';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { ConversationsContext } from '@/context/ConversationsContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Student as StudentType } from '@/lib/mock-data';
+import { doc } from 'firebase/firestore';
+import { StudentsContext } from '@/context/StudentsContext';
+
 
 export default function StudentLayout({
   children,
@@ -53,9 +56,17 @@ export default function StudentLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { notifications } = useContext(NotificationsContext);
-  const { students, loading: studentsLoading } = useContext(StudentsContext);
   const { user, isUserLoading } = useUser();
+  const { students, loading: studentsLoading } = useContext(StudentsContext);
   const { conversations } = useContext(ConversationsContext);
+
+  const student = useMemo(() => {
+    if (!user || !students) return null;
+    return students.find(s => s.authUid === user.uid || s.id === user.uid);
+  }, [user, students]);
+
+  const studentProfileLoading = isUserLoading || studentsLoading;
+
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -64,7 +75,6 @@ export default function StudentLayout({
   }, [user, isUserLoading, router]);
 
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
-  const student = useMemo(() => students.find(s => s.id === user?.uid), [students, user]);
   
   const unreadMessagesCount = useMemo(() => {
     if (!user) return 0;
@@ -87,7 +97,7 @@ export default function StudentLayout({
   ];
 
   const UserProfile = () => {
-    if (isUserLoading || studentsLoading || !student) {
+    if (studentProfileLoading || !student) {
         return (
             <div className="flex items-center gap-3 p-2">
                 <div className="h-9 w-9 rounded-full bg-muted animate-pulse"></div>
@@ -117,6 +127,12 @@ export default function StudentLayout({
             <DropdownMenuContent className="w-56 mb-2 z-50" align="end" side="top">
                 <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/student/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Configuración</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem>
                     <LogOut className="mr-2 h-4 w-4" />
                     <Link href="/login">Cerrar sesión</Link>
@@ -126,7 +142,7 @@ export default function StudentLayout({
     )
   }
   
-  if (isUserLoading || studentsLoading) {
+  if (studentProfileLoading) {
       return (
         <div className="flex h-screen w-full items-center justify-center">
             <GraduationCap className="h-12 w-12 animate-pulse text-primary" />
@@ -136,15 +152,23 @@ export default function StudentLayout({
 
   return (
       <SidebarProvider>
-        <Sidebar>
-          <SidebarHeader className="p-4">
-            <Link href="/dashboard/student" className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary p-2 text-primary-foreground">
-                <GraduationCap className="h-7 w-7" />
-              </div>
-              <span className="text-lg font-semibold">Escuela Los Arrozales</span>
-            </Link>
-          </SidebarHeader>
+        <Sidebar
+          header={
+            <SidebarHeader>
+              <Link href="/dashboard/student" className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary p-2 text-primary-foreground">
+                  <GraduationCap className="h-7 w-7" />
+                </div>
+                <span className="text-lg font-semibold">Escuela Los Arrozales</span>
+              </Link>
+            </SidebarHeader>
+          }
+          footer={
+            <SidebarFooter>
+              <UserProfile />
+            </SidebarFooter>
+          }
+        >
           <SidebarContent>
             <ScrollArea>
               <SidebarMenu>
@@ -164,11 +188,8 @@ export default function StudentLayout({
               </SidebarMenu>
             </ScrollArea>
           </SidebarContent>
-          <SidebarFooter className="p-4">
-             <UserProfile />
-          </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="flex flex-col min-h-svh">
+        <SidebarInset>
           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-4">
                <SidebarTrigger className="md:hidden" />

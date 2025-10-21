@@ -73,28 +73,21 @@ export default function CourseDetailPage() {
   const course = courses.find(c => c.id === courseId);
   const teacher = users.find(u => u.id === user?.uid);
 
-  const gradeAssignmentsCollection = useMemoFirebase(() => (firestore && user) ? collection(firestore, 'gradeAssignments') : null, [firestore, user]);
-  const { data: gradeAssignmentsData } = useCollection<GradeAssignment>(gradeAssignmentsCollection);
-
   const teacherAssignmentRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return doc(firestore, 'teacherAssignments', user.uid);
   }, [firestore, user]);
-  const { data: teacherAssignmentData } = useDoc<TeacherAssignment>(teacherAssignmentRef);
-
+  const { data: teacherAssignmentData, isLoading: teacherAssignmentLoading } = useDoc<TeacherAssignment>(teacherAssignmentRef);
+  
   const studentsInCourse = useMemo(() => {
-    if (!courseId || !gradeAssignmentsData || !teacherAssignmentData) return [];
+    if (!teacherAssignmentData || !students) return [];
 
-    const gradesForThisCourse = gradeAssignmentsData
-      .filter(ga => ga.courseIds.includes(courseId))
-      .map(ga => ga.id);
-    
     const teacherGrades = teacherAssignmentData.gradeIds || [];
-
-    const relevantGradesForTeacher = gradesForThisCourse.filter(g => teacherGrades.includes(g));
-
-    return students.filter(student => relevantGradesForTeacher.includes(student.grade));
-  }, [courseId, students, gradeAssignmentsData, teacherAssignmentData]);
+    
+    // This logic assumes a teacher only sees students in the grades they are assigned to.
+    // It seems the courseId is implicit, the page is already for a specific course.
+    return students.filter(student => teacherGrades.includes(student.grade));
+  }, [students, teacherAssignmentData]);
 
 
   const { grades, updateGrade } = useContext(GradesContext);

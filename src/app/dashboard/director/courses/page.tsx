@@ -292,9 +292,9 @@ function CourseFormDialog({ isOpen, onClose, onSubmit, course }: { isOpen: boole
         </DialogHeader>
         <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Nombre</Label>
-                  <Input id="name" name="name" defaultValue={course?.name} placeholder="Ej: Programación" className="col-span-3" required />
+              <div className="space-y-2">
+                  <Label htmlFor="name">Nombre del curso</Label>
+                  <Input id="name" name="name" defaultValue={course?.name} placeholder="Ej: Programación" required />
               </div>
             </div>
             <DialogFooter>
@@ -329,5 +329,3 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm, courseName }: { 
         </AlertDialog>
     );
 }
-
-    

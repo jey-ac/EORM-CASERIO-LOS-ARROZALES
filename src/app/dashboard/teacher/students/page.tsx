@@ -99,40 +99,38 @@ export default function TeacherStudentsPage() {
     
     const { dailyAttendances, saveAttendance } = useContext(AttendanceContext);
 
-    const studentsInCourse: Student[] = useMemo(() => {
-        if (!selectedCourse || !gradeAssignmentsData) return [];
+    const studentsInCourse: WithId<Student>[] = useMemo(() => {
+        if (!selectedCourse || !teacherAssignmentData || !gradeAssignmentsData) return [];
 
-        // Find which grades this course is taught in
-        const gradesForCourse = gradeAssignmentsData
-            .filter(ga => ga.courseIds.includes(selectedCourse))
-            .map(ga => ga.id);
+        const teacherGrades = teacherAssignmentData.gradeIds || [];
+        
+        const gradesForSelectedCourse = gradeAssignmentsData.filter(ga => ga.courseIds.includes(selectedCourse)).map(ga => ga.id);
+        
+        const relevantGrades = teacherGrades.filter(tg => gradesForSelectedCourse.includes(tg));
 
-        // Find all students who are in those grades
-        return students.filter(student => gradesForCourse.includes(student.grade));
+        return students.filter(student => relevantGrades.includes(student.grade));
 
-    }, [selectedCourse, students, gradeAssignmentsData]);
+    }, [selectedCourse, students, teacherAssignmentData, gradeAssignmentsData]);
+    
+    const [currentAttendance, setCurrentAttendance] = useState<AttendanceRecord[]>([]);
 
-    const attendanceRecords = useMemo(() => {
+    useEffect(() => {
         const dateString = format(date, 'yyyy-MM-dd');
         const todaysAttendance = dailyAttendances.find(
             att => att.courseId === selectedCourse && att.date === dateString
         );
 
         if (todaysAttendance) {
-            return todaysAttendance.records;
+            setCurrentAttendance(todaysAttendance.records);
+        } else {
+            // If no record exists for that day, initialize with all students present
+            setCurrentAttendance(studentsInCourse.map(student => ({
+                studentId: student.id,
+                status: 'presente' as AttendanceStatus,
+            })));
         }
-        
-        return studentsInCourse.map(student => ({
-            studentId: student.id,
-            status: 'presente' as AttendanceStatus,
-        }));
     }, [selectedCourse, date, studentsInCourse, dailyAttendances]);
 
-    const [currentAttendance, setCurrentAttendance] = useState(attendanceRecords);
-
-    useEffect(() => {
-        setCurrentAttendance(attendanceRecords);
-    }, [attendanceRecords]);
 
     useEffect(() => {
         if (courseIdFromQuery && teacherCourses.some(c => c.id === courseIdFromQuery)) {
@@ -150,6 +148,7 @@ export default function TeacherStudentsPage() {
                     att.studentId === studentId ? { ...att, status } : att
                 );
             }
+            // This case is unlikely with the new useEffect logic but kept for safety
             return [...prev, { studentId, status }];
         });
     };
@@ -365,7 +364,7 @@ export default function TeacherStudentsPage() {
                 </CardHeader>
                 <CardContent>
                     <ScrollArea className="w-full whitespace-nowrap">
-                        {currentAttendance.length > 0 ? (
+                        {currentAttendance.length > 0 && studentsInCourse.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -375,13 +374,13 @@ export default function TeacherStudentsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {currentAttendance.map(record => {
-                                        const student = studentsInCourse.find(s => s.id === record.studentId);
+                                    {studentsInCourse.map(student => {
+                                        const record = currentAttendance.find(rec => rec.studentId === student.id);
                                         return (
-                                            <TableRow key={record.studentId}>
-                                                <TableCell>{student?.name || 'Desconocido'}</TableCell>
-                                                <TableCell>{student?.grade || ''}</TableCell>
-                                                <TableCell>{statusTranslations[record.status]}</TableCell>
+                                            <TableRow key={student.id}>
+                                                <TableCell>{student.name}</TableCell>
+                                                <TableCell>{student.grade}</TableCell>
+                                                <TableCell>{record ? statusTranslations[record.status] : 'No registrado'}</TableCell>
                                             </TableRow>
                                         )
                                     })}
@@ -396,3 +395,5 @@ export default function TeacherStudentsPage() {
         </div>
     );
 }
+
+    

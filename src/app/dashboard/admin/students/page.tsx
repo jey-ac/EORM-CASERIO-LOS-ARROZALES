@@ -57,31 +57,27 @@ export default function AdminStudentsPage() {
       });
     } catch (error: any) {
       console.error(error);
-      let description = 'No se pudo actualizar el estado del estudiante.';
-      if (error.code === 'auth/email-already-in-use') {
-        description = 'Este correo electrónico ya está en uso por otra cuenta de autenticación.';
-      }
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: description,
+        title: 'Error al actualizar estado',
+        description: error.message || 'No se pudo actualizar el estado del estudiante.',
       });
     }
   };
   
-  const handleUpdateStudent = (student: WithId<Student>) => {
+  const handleUpdateStudent = async (student: Partial<Student> & { id: string }) => {
     try {
-      updateStudent(student);
+      await updateStudent(student);
       setEditingStudent(null);
       toast({
         title: 'Éxito',
         description: 'La información del estudiante ha sido actualizada.',
       });
-    } catch (error) {
+    } catch (error: any) {
        toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'No se pudo actualizar la información del estudiante.',
+        description: error.message || 'No se pudo actualizar la información del estudiante.',
       });
     }
   };
@@ -94,13 +90,13 @@ export default function AdminStudentsPage() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Activar y gestionar estudiantes</CardTitle>
+          <CardTitle>Gestionar estudiantes</CardTitle>
           <CardDescription>
-            Active, desactive y edite la información de la cuenta de los estudiantes inscritos.
+            Active a los estudiantes para darles acceso al sistema o edite su información.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="w-full overflow-x-auto">
+          <ScrollArea className="w-full whitespace-nowrap">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -134,13 +130,14 @@ export default function AdminStudentsPage() {
                           <Select
                               value={student.status}
                               onValueChange={(newStatus: 'active' | 'inactive') => handleStatusChange(student.id, newStatus)}
+                               disabled={student.status === 'active'}
                           >
                               <SelectTrigger className="w-full sm:w-[120px]">
                                   <SelectValue placeholder="Cambiar estado" />
                               </SelectTrigger>
                               <SelectContent>
                                   <SelectItem value="active">Activo</SelectItem>
-                                  <SelectItem value="inactive">Inactivo</SelectItem>
+                                  <SelectItem value="inactive" disabled>Inactivo</SelectItem>
                               </SelectContent>
                           </Select>
                       </div>
@@ -149,7 +146,7 @@ export default function AdminStudentsPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </ScrollArea>
         </CardContent>
       </Card>
       <StudentFormDialog
@@ -162,26 +159,19 @@ export default function AdminStudentsPage() {
   );
 }
 
-function StudentFormDialog({ isOpen, onClose, onSubmit, student }: { isOpen: boolean, onClose: () => void, onSubmit: (student: WithId<Student>) => void, student: WithId<Student> | null }) {
-    
+function StudentFormDialog({ isOpen, onClose, onSubmit, student }: { isOpen: boolean, onClose: () => void, onSubmit: (student: Partial<Student> & { id: string }) => void, student: WithId<Student> | null }) {
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if(!student) return;
 
         const formData = new FormData(e.currentTarget);
         const name = formData.get('name') as string;
-        const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
         
-        const updatedStudent: WithId<Student> = {
-            ...student,
+        const updatedStudent: Partial<Student> & {id: string} = {
+            id: student.id,
             name: name || student.name,
-            email: email || student.email,
         };
-
-        if (password) {
-            updatedStudent.password = password;
-        }
         
         onSubmit(updatedStudent);
     }
@@ -205,15 +195,8 @@ function StudentFormDialog({ isOpen, onClose, onSubmit, student }: { isOpen: boo
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="email">Correo electrónico</Label>
-                    <Input id="email" name="email" type="email" defaultValue={student.email} required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="current-password">Contraseña actual</Label>
-                    <Input id="current-password" name="current-password" type="text" defaultValue={student.password} readOnly disabled />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="password">Nueva contraseña (opcional)</Label>
-                    <Input id="password" name="password" type="password" placeholder="Dejar en blanco para no cambiar" />
+                    <Input id="email" name="email" type="email" defaultValue={student.email} required disabled />
+                     <p className="text-xs text-muted-foreground">El correo electrónico no se puede cambiar.</p>
                 </div>
                 <div className="space-y-2">
                     <Label>Grado</Label>

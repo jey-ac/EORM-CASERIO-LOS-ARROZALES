@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { createContext, ReactNode } from 'react';
@@ -8,18 +7,20 @@ import {
   doc,
   serverTimestamp,
   setDoc,
-  query,
-  where,
   updateDoc,
+  query,
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, updatePassword, getAuth } from'firebase/auth';
-import { useFirestore, useCollection, WithId, useMemoFirebase, useUser, useAuth } from '@/firebase';
+import { createUserWithEmailAndPassword, signOut } from'firebase/auth';
+import { useFirestore, useCollection, WithId, useMemoFirebase, useUser, useAuth, initializeFirebase } from '@/firebase';
 import { User } from '@/lib/mock-data';
+import { getApp, initializeApp, deleteApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { firebaseConfig } from '@/firebase/config';
 
 interface UsersContextType {
     users: WithId<User>[];
     addUser: (newUser: Omit<User, 'id' | 'status'>) => Promise<void>;
-    updateUser: (updatedUser: Partial<User> & { id: string }) => void;
+    updateUser: (updatedUser: Partial<User> & { id: string }) => Promise<void>;
     updateUserStatus: (userId: string, status: 'active' | 'inactive') => void;
     loading: boolean;
     error: Error | null;
@@ -28,7 +29,7 @@ interface UsersContextType {
 export const UsersContext = createContext<UsersContextType>({
     users: [],
     addUser: async () => {},
-    updateUser: () => {},
+    updateUser: async () => {},
     updateUserStatus: () => {},
     loading: true,
     error: null,
@@ -36,12 +37,12 @@ export const UsersContext = createContext<UsersContextType>({
 
 export const UsersProvider = ({ children }: { children: ReactNode }) => {
     const firestore = useFirestore();
-    const auth = useAuth();
+    const mainAuth = useAuth(); // The admin's auth instance
     const { user: currentUser, isUserLoading } = useUser();
     
     const usersCollectionQuery = useMemoFirebase(() => {
       if (!currentUser || !firestore) return null;
-      return collection(firestore, 'users');
+      return query(collection(firestore, 'users'));
     }, [firestore, currentUser]);
     
     const { data: usersData, isLoading, error } = useCollection<User>(
@@ -52,47 +53,64 @@ export const UsersProvider = ({ children }: { children: ReactNode }) => {
     const users = usersData || [];
 
     const addUser = async (userData: Omit<User, 'id' | 'status'>) => {
-      if (!firestore || !auth || !userData.password || !userData.email) {
-        throw new Error("Missing required data (email, password) for user creation.");
+      if (!firestore || !mainAuth || !userData.password || !userData.email) {
+        throw new Error("Missing required data (email, password) or Firebase services not ready.");
       }
+
+      // Use a unique name for the temporary app to avoid conflicts
+      const tempAppName = `auth-worker-${Date.now()}`;
+      const tempApp = initializeApp(firebaseConfig, tempAppName);
+      const tempAuth = getAuth(tempApp);
+
       try {
-        const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+        // Create the user in the temporary auth instance
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, userData.email, userData.password);
         const authUser = userCredential.user;
         
-        const userDataForFirestore: Partial<User> = { ...userData };
-        delete userDataForFirestore.password;
-
-        await setDoc(doc(firestore, 'users', authUser.uid), {
-          ...userDataForFirestore,
-          id: authUser.uid,
+        const userPayload: Omit<User, 'id'> = {
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
           status: 'active',
+          password: userData.password, 
           createdAt: serverTimestamp(),
-        });
+        };
 
-      } catch (e) {
-        console.error("Error adding user: ", e);
-        throw e;
+        // Use the Authentication UID as the document ID in Firestore.
+        await setDoc(doc(firestore, 'users', authUser.uid), userPayload);
+        
+        // The new user is signed in only in the temporary instance.
+        // The main session (admin) is unaffected.
+
+      } catch (e: any) {
+        console.error("Error adding user in temporary auth instance: ", e);
+        if (e.code === 'auth/email-already-in-use') {
+            throw new Error('Este correo electrónico ya está en uso por otra cuenta.');
+        }
+        if (e.code === 'auth/weak-password') {
+            throw new Error('La contraseña debe tener al menos 6 caracteres.');
+        }
+        throw new Error('No se pudo crear el usuario. ' + e.message);
+      } finally {
+        // Clean up the temporary app instance to prevent memory leaks and clear the temporary session
+        await deleteApp(tempApp);
       }
     };
 
     const updateUser = async (updatedUserData: Partial<User> & { id: string }) => {
-       if (!firestore) return;
-       try {
-        const userRef = doc(firestore, 'users', updatedUserData.id);
-        const { id, password, ...dataToUpdate } = updatedUserData;
+       if (!firestore) throw new Error("Firebase services not initialized.");
+       
+        const { id, password, email, ...dataToUpdate } = updatedUserData;
         
-        await updateDoc(userRef, dataToUpdate);
-
-        if (password) {
-            // This logic requires a privileged environment (like a Cloud Function) to securely update a user's password.
-            // It is intentionally left out of the client-side code for security reasons.
-            console.warn("Password was updated in Firestore, but not in Firebase Auth for security reasons. A Cloud Function is required for this.");
+        if (Object.keys(dataToUpdate).length > 0) {
+            const userDocRef = doc(firestore, 'users', id);
+            try {
+                await updateDoc(userDocRef, dataToUpdate);
+            } catch (error) {
+                 console.error("Error updating user document in Firestore:", error);
+                 throw new Error("Failed to update user data in Firestore.");
+            }
         }
-
-      } catch (e) {
-        console.error("Error updating user: ", e);
-        throw e;
-      }
     };
     
     const updateUserStatus = async (userId: string, status: 'active' | 'inactive') => {

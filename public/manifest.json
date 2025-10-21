@@ -1,0 +1,10 @@
+
+{
+    "name": "EORM Caserío Los Arrozales",
+    "short_name": "Arrozales",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4a90e2",
+    "gcm_sender_id": "103953800507"
+}

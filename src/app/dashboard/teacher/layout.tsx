@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Users,
   Calendar,
+  Settings,
 } from 'lucide-react';
 import { useContext, useEffect, useMemo, useState } from 'react';
 
@@ -130,7 +131,7 @@ export default function TeacherLayout({
         <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-auto w-full justify-start gap-3 p-2">
                 <Avatar className="h-9 w-9">
-                    <AvatarImage src={(teacherUser as any)?.photoURL || "https://placehold.co/100x100.png"} alt={teacherUser?.name || 'Profesor'} data-ai-hint="user avatar" />
+                    <AvatarImage src={(teacherUser as any)?.photoURL || ""} alt={teacherUser?.name || 'Profesor'} data-ai-hint="user avatar" />
                     <AvatarFallback>{teacherUser?.name?.charAt(0) || 'P'}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start text-left">
@@ -143,6 +144,12 @@ export default function TeacherLayout({
         <DropdownMenuContent className="w-56 mb-2 z-50" align="end" side="top">
             <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/teacher/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Configuración</span>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>
                 <LogOut className="mr-2 h-4 w-4" />
                 <Link href="/login">Cerrar sesión</Link>
@@ -162,15 +169,23 @@ export default function TeacherLayout({
 
   return (
       <SidebarProvider>
-        <Sidebar>
-          <SidebarHeader className="p-4">
-            <Link href="/dashboard/teacher" className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary p-2 text-primary-foreground">
-                <GraduationCap className="h-7 w-7" />
-              </div>
-              <span className="text-lg font-semibold">Escuela Los Arrozales</span>
-            </Link>
-          </SidebarHeader>
+        <Sidebar
+          header={
+            <SidebarHeader>
+              <Link href="/dashboard/teacher" className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary p-2 text-primary-foreground">
+                  <GraduationCap className="h-7 w-7" />
+                </div>
+                <span className="text-lg font-semibold">Escuela Los Arrozales</span>
+              </Link>
+            </SidebarHeader>
+          }
+          footer={
+            <SidebarFooter>
+              <UserProfile />
+            </SidebarFooter>
+          }
+        >
           <SidebarContent>
             <ScrollArea>
               <SidebarMenu>
@@ -190,11 +205,8 @@ export default function TeacherLayout({
               </SidebarMenu>
             </ScrollArea>
           </SidebarContent>
-          <SidebarFooter className="p-4">
-            <UserProfile />
-          </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="flex flex-col min-h-svh">
+        <SidebarInset>
           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="md:hidden" />
