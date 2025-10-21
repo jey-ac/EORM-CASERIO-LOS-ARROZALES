@@ -90,6 +90,7 @@ service cloud.firestore {
 }
 
 
-<img width="1920" height="1080" alt="BasedeDatos" src="https://github.com/user-attachments/assets/2cc566b7-9c11-41dc-84b1-62fd4fc1580d" />
+<img width="896" height="308" alt="image" src="https://github.com/user-attachments/assets/10fbfd32-4fa4-4318-8d6b-177784c71694" />
+
 
 
